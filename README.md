@@ -77,6 +77,12 @@ RollingTicTacToe/
 
 ---
 
+## Sample Output 
+
+![image](https://github.com/user-attachments/assets/7f2073a6-205c-467a-b07c-3c0245b35855)
+
+---
+
 ## 🧑‍🎓 Made For
 
 This project was created as part of a **Python mini project** for academic submission. Fork, change, or extend it for your learning or enjoyment!
