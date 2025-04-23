@@ -1,74 +1,114 @@
-import random
+import tkinter as tk
+from tkinter import Toplevel
 
-# Define the game board
-board = [" " for _ in range(9)]
+# Theme Colors
+bg_color = "#1e1e2f"
+cell_bg = "#2a2a3d"
+cell_click_bg = "#3d3d5c"
+text_color = "#d9a7ff"
 
-# Function to print the board
-def print_board():
-    print("\n")
-    for i in range(0, 9, 3):
-        print(f"{board[i]} | {board[i+1]} | {board[i+2]}")
-        if i < 6:
-            print("---------")
-    print("\n")
+# Game State
+current_player = 'X'
+board = [['' for _ in range(3)] for _ in range(3)]
+buttons = [[None for _ in range(3)] for _ in range(3)]
+moves_X = []
+moves_O = []
 
-# Function to check if the game is over (win or tie)
-def check_win():
-    win_conditions = [(0, 1, 2), (3, 4, 5), (6, 7, 8), (0, 3, 6), (1, 4, 7), (2, 5, 8), (0, 4, 8), (2, 4, 6)]
-    
-    for condition in win_conditions:
-        if board[condition[0]] == board[condition[1]] == board[condition[2]] and board[condition[0]] != " ":
-            return board[condition[0]]  # Returns 'X' or 'O' if there's a winner
-    if " " not in board:
-        return "Tie"  # The game is a tie if no empty spaces are left
-    return None  # The game is still ongoing
+# Place move
+def place_move(row, col):
+    global current_player
 
-# Function for player turn
-def player_turn(player, symbol):
-    while True:
-        try:
-            move = int(input(f"Player {player} ({symbol}), enter your move (1-9): ")) - 1
-            if board[move] == " ":
-                board[move] = symbol
-                break
-            else:
-                print("The spot is already taken, choose another spot.")
-        except (ValueError, IndexError):
-            print("Invalid move. Please enter a number between 1 and 9.")
-    print_board()
+    if board[row][col] != '':
+        return
 
-# Function for computer turn
-def computer_turn(symbol):
-    print("Computer is making a move...")
-    while True:
-        move = random.randint(0, 8)
-        if board[move] == " ":
-            board[move] = symbol
-            break
-    print_board()
+    # Rolling move logic
+    if current_player == 'X':
+        if len(moves_X) == 3:
+            old_row, old_col = moves_X.pop(0)
+            board[old_row][old_col] = ''
+            buttons[old_row][old_col].config(text='', bg=cell_bg)
+        moves_X.append((row, col))
+    else:
+        if len(moves_O) == 3:
+            old_row, old_col = moves_O.pop(0)
+            board[old_row][old_col] = ''
+            buttons[old_row][old_col].config(text='', bg=cell_bg)
+        moves_O.append((row, col))
 
-# Main game loop
-def play_game():
-    print_board()
-    while True:
-        player_turn(1, 'X')  # Player 1 is X
-        winner = check_win()
-        if winner:
-            if winner == "Tie":
-                print("It's a tie!")
-            else:
-                print(f"Player {1} wins!")
-            break
+    board[row][col] = current_player
+    buttons[row][col].config(text=current_player, fg=text_color, bg=cell_click_bg)
 
-        computer_turn('O')  # Computer is O
-        winner = check_win()
-        if winner:
-            if winner == "Tie":
-                print("It's a tie!")
-            else:
-                print(f"Computer wins!")
-            break
+    if check_win(current_player):
+        show_popup(f"🎉 Player {current_player} Wins! 🎉")
+        return
 
-# Start the game
-if __name__ == "__main__":
-    play_game()
+    current_player = 'O' if current_player == 'X' else 'X'
+    label.config(text=f"Player {current_player}'s Turn", fg=text_color)
+
+# Check win condition
+def check_win(player):
+    for i in range(3):
+        if all(board[i][j] == player for j in range(3)) or \
+           all(board[j][i] == player for j in range(3)):
+            return True
+    if all(board[i][i] == player for i in range(3)) or \
+       all(board[i][2 - i] == player for i in range(3)):
+        return True
+    return False
+
+# Reset the game
+def reset_board():
+    global board, moves_X, moves_O, current_player
+    board = [['' for _ in range(3)] for _ in range(3)]
+    moves_X.clear()
+    moves_O.clear()
+    current_player = 'X'
+    label.config(text="Player X's Turn", fg=text_color)
+    for i in range(3):
+        for j in range(3):
+            buttons[i][j].config(text='', bg=cell_bg)
+
+# Animated popup for win
+def show_popup(message):
+    popup = Toplevel(window)
+    popup.title("🎊 Game Over")
+    popup.geometry("300x120")
+    popup.config(bg=bg_color)
+    popup.attributes('-topmost', True)
+
+    popup_label = tk.Label(popup, text=message, font=('Consolas', 14, 'bold'),
+                           fg=text_color, bg=bg_color)
+    popup_label.pack(pady=20)
+
+    close_btn = tk.Button(popup, text="Play Again", command=lambda: [popup.destroy(), reset_board()],
+                          bg=cell_click_bg, fg='white')
+    close_btn.pack(pady=5)
+
+# GUI setup
+window = tk.Tk()
+window.title("Rolling Tic Tac Toe - Purple Neon")
+window.geometry("400x480")
+window.resizable(False, False)
+window.configure(bg=bg_color)
+
+label = tk.Label(window, text="Player X's Turn", font=('Consolas', 16, 'bold'),
+                 bg=bg_color, fg=text_color)
+label.pack(pady=10)
+
+frame = tk.Frame(window, bg=bg_color)
+frame.pack()
+
+for i in range(3):
+    for j in range(3):
+        buttons[i][j] = tk.Button(frame, text='', font=('Consolas', 22, 'bold'),
+                                  width=5, height=2, bg=cell_bg, fg='white',
+                                  activebackground=cell_click_bg,
+                                  command=lambda i=i, j=j: place_move(i, j))
+        buttons[i][j].grid(row=i, column=j, padx=5, pady=5)
+
+reset_btn = tk.Button(window, text="Reset Game", font=('Consolas', 13),
+                      command=reset_board, bg="#444", fg="white",
+                      activebackground="#666")
+reset_btn.pack(pady=10)
+
+window.mainloop()
